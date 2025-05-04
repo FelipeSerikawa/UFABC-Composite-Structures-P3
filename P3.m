@@ -62,4 +62,100 @@ Mxy = 0 %% N
 Nmec = [Nx, Ny, Nxy]
 Mmec = [Mx, My, Mxy]
 
-% Item 7 – Calcular as matrizes [A], [B], [D] e [As]; 
+% Item 7 – Calcular as matrizes [A], [B], [D] e [As];
+
+% Primeiro, vamos calcular a matriz Q0
+
+Q0 = inverse(S0) %  Inversa da matriz S0
+
+% Agora, vamos calcular as matriz para os angulos (Ex. Q+55 e Q-55)
+
+c = cos(orientation)
+s = sin(orientation)
+
+
+L1 = [];
+L2 = [];
+Q = [];
+
+% Matrizes L
+for k = 1:n
+    L1{k} = [[c(k)^2,     s(k)^2,     -2*c(k)*s(k)],
+              [s(k)^2,     c(k)^2,      2*c(k)*s(k)],
+              [c(k)*s(k), -c(k)*s(k),   c(k)^2 - s(k)^2]];
+end
+
+for k = 1:n
+    L2{k} = L1{k}';
+end
+
+L2
+
+% Matrizes Q
+for k = 1:n
+    Q{k} = [[L1{k}*Q0*L2{k}]];
+end
+
+Q
+
+% Vetores Alfa
+alfa = zeros(3,1);
+
+for camada = 1:n
+    camada_alfa = inv(L2{camada}) * reshape(alphaXY, [], 1);
+    alfa = [alfa, camada_alfa];
+end
+
+alfa = alfa(:, 2:end);
+alfa = alfa.';
+
+alfa
+
+% Matriz z - espessura
+
+function indices = vetor_z(n, t)
+    if mod(n, 2) == 1
+        % n ímpar
+        camadas = (n - 1) / 2;
+        indices = linspace((n * t) / 2, 0, camadas);
+
+        indices_b = -flip(indices);
+        indices = [indices, t/2, -t/2, indices_b];
+    else
+        % n par
+        indices = linspace((n * t) / 2, -(n * t) / 2, n + 1);
+    end
+end
+
+z = vetor_z(n, t);
+
+z
+
+% Calculando matriz A
+
+
+A = zeros(3);
+
+for i = 1:n
+    A = A + (z(i) - z(i+1)) * Q{i};
+end
+
+A
+
+% Calculando matriz B
+B = zeros(3);
+
+for i = 1:n
+    B = B + (1/2) * ((z(i)^2 - z(i+1)^2) * Q{i});
+end
+
+B
+
+% Calculando matriz D
+D = zeros(3);
+
+for i = 1:n
+    D = D + (1/3) * ((z(i)^3 - z(i+1)^3) * Q{i});
+end
+
+D
