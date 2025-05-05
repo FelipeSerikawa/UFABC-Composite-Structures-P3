@@ -163,7 +163,7 @@ end
 
 D
 
-% Item 8
+% Item 8 - deformações na superfície média do laminado
 NT = zeros(3,1);
 MT = zeros(3,1);
 
@@ -196,3 +196,8 @@ kapa = solucao_total(4:6);
 
 e0
 kapa
+
+% Item 9 - variável npl
+
+npl = 3;
+npl
