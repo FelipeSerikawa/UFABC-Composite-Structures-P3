@@ -201,3 +201,18 @@ kapa
 
 npl = 3;
 npl
+
+% Item 10 - valor da coordenada z para cada ponto analisado ao longo do laminado e armazenar esses valores na variável zpos
+
+zpos = [];
+
+for k = 1:n
+    z_top = z(k); % limite superior da camada k
+    z_bot = z(k+1); % limite inferior da camada k
+
+    z_layer = linspace(z_top, z_bot, npl); % Divide igualmente a espessura da camada em npl pontos
+
+    zpos = [zpos; z_layer(:)]; % Armazena os pontos como vetor coluna (z_layer(:))
+end
+
+zpos
