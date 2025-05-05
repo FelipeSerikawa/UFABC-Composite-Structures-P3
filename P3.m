@@ -12,7 +12,7 @@ t = 6.35e-4; %% [m]
 
 % Item 3 - vetores com orientação de cada camada
 
-orientation = [55 * pi/180, -55 * pi/180]; %% º - [camada(1), camada(2), camada(3), ..., camada(n)]
+orientation = [[55 * pi/180, -55 * pi/180]]; %% º - [camada(1), camada(2), camada(3), ..., camada(n)]
 
 % Item 4 - Receber as propriedades da lâmina
 
@@ -189,6 +189,7 @@ M_total = Mmec + MT;
 NM_total = [N_total; M_total];
 
 % Resolve o sistema [A B; B D] * [epsilon0; kappa] = [N_total; M_total]
+ABD = [A B; B D];
 solucao_total = ABD \ NM_total;
 
 e0 = solucao_total(1:3);
@@ -216,3 +217,26 @@ for k = 1:n
 end
 
 zpos
+
+% Item 11 - componentes das deformações nas direções x e y (ex, ey, Yxy) para cada posição z
+StrainXY = zeros(3, 1, length(zpos));
+
+for i = 1:length(zpos)
+    z_i = zpos(i);
+    StrainXY(:, 1, i) = e0 + z_i * kapa;
+end
+
+fprintf('\nResults for Strains in XY directions\n');
+ponto = 1;
+for camada = 1:n
+    angulo_graus = orientation(camada) * 180 / pi;
+    for j = 1:npl
+        fprintf('layer = %d\n', camada);
+        fprintf('angle = %.0f\n', angulo_graus);
+        fprintf('z_coordinate = %.4e\n', zpos(ponto));
+        fprintf('StrainXY =\n');
+        fprintf('  % .4e\n', StrainXY(:, 1, ponto));
+        fprintf('\n');
+        ponto = ponto + 1;
+    end
+end
