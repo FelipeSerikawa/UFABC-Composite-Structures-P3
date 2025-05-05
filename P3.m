@@ -4,74 +4,77 @@ clc
 
 % Item 1 - número de camadas n
 
-n = 2
-
+n = 2;
+n
 % Item 2 - espessura t da camada (espessuras iguais para todas as camadas)
 
-t = 6.35e-4 %% [m]
+t = 6.35e-4; %% [m]
 
 % Item 3 - vetores com orientação de cada camada
 
-orientation = [55 * pi/180, -55 * pi/180] %% º - [camada(1), camada(2), camada(3), ..., camada(n)]
+orientation = [55 * pi/180, -55 * pi/180]; %% º - [camada(1), camada(2), camada(3), ..., camada(n)]
 
 % Item 4 - Receber as propriedades da lâmina
 
 % Módulo de elasticidade
-E1 = 19.981E+9    %% Pa
-E2 = 11.389E+9    %% Pa
-
+E1 = 1.9981e+10;    %% Pa
+E2 = 1.1389e+10;    %% Pa
+E3 = 1.1389e+10;    %% Pa
 % Coeficiente de Poisson
-v12 = 0.2740
-v13 = 0.3850
-v23 = 0.3850
-v21 = v12*E2/E1
+v12 = 0.2740;
+v13 = 0.3850;
+v23 = 0.3850;
+v21 = v12*E2/E1;
 
 % Módulo de cisalhamento
-G12 = 3.789E+9
-G23 = 3.789E+9
-G13 = 3.789E+9    %% Pa
+G12 = 3.789E+9;
+G23 = 3.789E+9;
+G13 = 3.789E+9;    %% Pa
 
 % Coeficiente de expansão térmica
-alfa1 = 8.42E-6   %% 1/C
-alfa2 = 2.98E-5   %% 1/C
+alfa1 = 8.42E-6;   %% 1/C
+alfa2 = 2.98E-5;   %% 1/C
 
 % Resistência da lâmina
-Xt = 1035E+006; %% Pa
-Xc = 1035E+006; %% Pa
-Yt = 27.6E+006; %% Pa
-Yc = 138E+006;  %% Pa
-S6 = 41.4E+006; %% Pa
+Xt = 1.0350e+09; %% Pa
+Xc = 1.0350e+09; %% Pa
+Yt = 2.7600e+07; %% Pa
+Yc = 1.3800e+08;  %% Pa
+S6 = 4.1400e+07; %% Pa
 
 % Item 5 - Matrizes Q e vetor {a}xy
+alphaXY = [alfa1; alfa2; 0];
+alphaXY
+
 S0 = [[1/E1,   -v21/E2, 0],
       [-v12/E1, 1/E2,   0],
-      [0,       0,      1/G12]]
+      [0,       0,      1/G12]];
+S0
 
-alphaXY = [alfa1, alfa2, 0]
 
 % Item 6 - Variação da temperatura e carregamento mecânico
-DT = -100 %% ºC
+DT = -100; %% ºC
 
-Nx = 0  %% N
-Ny = 0  %% N
-Nxy = 0 %% N
+Nx = 0;  %% N
+Ny = 0;  %% N
+Nxy = 0; %% N
 
-Mx = 0  %% N
-My = 0  %% N
-Mxy = 0 %% N
-Nmec = [Nx, Ny, Nxy]
-Mmec = [Mx, My, Mxy]
+Mx = 0;  %% N
+My = 0;  %% N
+Mxy = 0; %% N
+Nmec = [Nx; Ny; Nxy];
+Mmec = [Mx; My; Mxy];
 
 % Item 7 – Calcular as matrizes [A], [B], [D] e [As];
 
 % Primeiro, vamos calcular a matriz Q0
-
-Q0 = inverse(S0) %  Inversa da matriz S0
+Q0 = inverse(S0); %  Inversa da matriz S0
+Q0
 
 % Agora, vamos calcular as matriz para os angulos (Ex. Q+55 e Q-55)
 
-c = cos(orientation)
-s = sin(orientation)
+c = cos(orientation);
+s = sin(orientation);
 
 
 L1 = [];
@@ -159,3 +162,37 @@ for i = 1:n
 end
 
 D
+
+% Item 8
+NT = zeros(3,1);
+MT = zeros(3,1);
+
+for k = 1:n
+    delta_z = z(k) - z(k+1);
+    NT = NT + Q{k} * alfa(k,:).' * DT * delta_z;
+
+    zk = z(k);
+    zk1 = z(k+1);
+    MT = MT + Q{k} * alfa(k,:).' * DT * (zk^2 - zk1^2)/2;
+end
+
+NT
+MT
+
+Nmec
+Mmec
+
+N_total = Nmec + NT;
+M_total = Mmec + MT;
+
+% Atualiza vetor total de esforços e momentos
+NM_total = [N_total; M_total];
+
+% Resolve o sistema [A B; B D] * [epsilon0; kappa] = [N_total; M_total]
+solucao_total = ABD \ NM_total;
+
+e0 = solucao_total(1:3);
+kapa = solucao_total(4:6);
+
+e0
+kapa
