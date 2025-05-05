@@ -218,7 +218,7 @@ end
 
 zpos
 
-% Item 11 - componentes das deformações nas direções x e y (ex, ey, Yxy) para cada posição z
+% Item 11 - Calcular as componentes das deformações nas direções x e y (ex, ey, Yxy) para cada posição z
 StrainXY = zeros(3, 1, length(zpos));
 
 for i = 1:length(zpos)
@@ -236,6 +236,40 @@ for camada = 1:n
         fprintf('z_coordinate = %.4e\n', zpos(ponto));
         fprintf('StrainXY =\n');
         fprintf('  % .4e\n', StrainXY(:, 1, ponto));
+        fprintf('\n');
+        ponto = ponto + 1;
+    end
+end
+
+% Item 12 - Calcular as componentes das tensões nas direções x e y (Sx, Sy, Txy) para cada posição z
+
+StressXY = zeros(3, 1, length(zpos));
+
+ponto = 1;
+for camada = 1:n
+    Qk = Q{camada};
+    alpha_k = alfa(camada, :).';
+    for j = 1:npl
+        z_i = zpos(ponto);
+
+        strain_total = e0 + z_i * kapa;
+
+        StressXY(:, 1, ponto) = Qk * (strain_total - DT * alpha_k);
+
+        ponto = ponto + 1;
+    end
+end
+
+fprintf('\nResults for Stresses in XY directions\n');
+ponto = 1;
+for camada = 1:n
+    angulo_graus = orientation(camada) * 180 / pi;
+    for j = 1:npl
+        fprintf('layer = %d\n', camada);
+        fprintf('angle = %.0f\n', angulo_graus);
+        fprintf('z_coordinate = %.4e\n', zpos(ponto));
+        fprintf('StressXY =\n');
+        fprintf('  % .4e\n', StressXY(:, 1, ponto));
         fprintf('\n');
         ponto = ponto + 1;
     end
