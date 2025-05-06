@@ -274,3 +274,224 @@ for camada = 1:n
         ponto = ponto + 1;
     end
 end
+
+% Item 13 - Calcular as componentes das tensões nas direções 1 e 2 (S1, S2, T12) para cada posição z
+Stress12 = zeros(3, 1, length(zpos));
+
+ponto = 1;
+for camada = 1:n
+    angulo = orientation(camada);
+    c = cos(angulo);
+    s = sin(angulo);
+    
+    % Matriz de transformação para tensões
+    T_sigma = [c^2, s^2, 2*c*s;
+               s^2, c^2, -2*c*s;
+               -c*s, c*s, c^2-s^2];
+    
+    for j = 1:npl
+        % Transforma as tensões de XY para 12
+        Stress12(:, 1, ponto) = T_sigma \ StressXY(:, 1, ponto);
+        
+        ponto = ponto + 1;
+    end
+end
+
+fprintf('\nResults for Stresses in 12 directions\n');
+ponto = 1;
+for camada = 1:n
+    angulo_graus = orientation(camada) * 180 / pi;
+    for j = 1:npl
+        fprintf('layer = %d\n', camada);
+        fprintf('angle = %.0f\n', angulo_graus);
+        fprintf('z_coordinate = %.4e\n', zpos(ponto));
+        fprintf('Stress12 =\n');
+        fprintf('  % .4e\n', Stress12(:, 1, ponto));
+        fprintf('\n');
+        ponto = ponto + 1;
+    end
+end
+
+% Item 14 - Calcular as componentes das deformações nas direções 1 e 2 (e1, e2, Y12) para cada posição z
+Strain12 = zeros(3, 1, length(zpos));
+
+ponto = 1;
+for camada = 1:n
+    angulo = orientation(camada);
+    c = cos(angulo);
+    s = sin(angulo);
+    
+    % Matriz de transformação para deformações
+    T_epsilon = [c^2, s^2, c*s;
+                 s^2, c^2, -c*s;
+                 -2*c*s, 2*c*s, c^2-s^2];
+    
+    for j = 1:npl
+        % Transforma as deformações de XY para 12
+        Strain12(:, 1, ponto) = T_epsilon \ StrainXY(:, 1, ponto);
+        
+        ponto = ponto + 1;
+    end
+end
+
+fprintf('\nResults for Strains in 12 directions\n');
+ponto = 1;
+for camada = 1:n
+    angulo_graus = orientation(camada) * 180 / pi;
+    for j = 1:npl
+        fprintf('layer = %d\n', camada);
+        fprintf('angle = %.0f\n', angulo_graus);
+        fprintf('z_coordinate = %.4e\n', zpos(ponto));
+        fprintf('Strain12 =\n');
+        fprintf('  % .4e\n', Strain12(:, 1, ponto));
+        fprintf('\n');
+        ponto = ponto + 1;
+    end
+end
+
+% Item 15 - Avaliar para cada posição z o critério de máxima tensão
+fprintf('\nMaximum Stress Criterion Evaluation\n');
+ponto = 1;
+for camada = 1:n
+    angulo_graus = orientation(camada) * 180 / pi;
+    for j = 1:npl
+        S1 = Stress12(1, 1, ponto);
+        S2 = Stress12(2, 1, ponto);
+        T12 = Stress12(3, 1, ponto);
+        
+        fprintf('layer = %d\n', camada);
+        fprintf('angle = %.0f\n', angulo_graus);
+        fprintf('z_coordinate = %.4e\n', zpos(ponto));
+        
+        % Verificação de falha por tensão máxima
+        if S1 > Xt || S1 < -Xc
+            fprintf('FAILURE in fiber direction (1)\n');
+            if S1 > 0
+                fprintf('Mode: Tensile failure in fiber direction\n');
+            else
+                fprintf('Mode: Compressive failure in fiber direction\n');
+            end
+        elseif S2 > Yt || S2 < -Yc
+            fprintf('FAILURE in transverse direction (2)\n');
+            if S2 > 0
+                fprintf('Mode: Tensile failure in matrix direction\n');
+            else
+                fprintf('Mode: Compressive failure in matrix direction\n');
+            end
+        elseif abs(T12) > S6
+            fprintf('FAILURE in shear\n');
+            fprintf('Mode: Shear failure\n');
+        else
+            fprintf('NO FAILURE detected\n');
+        end
+        
+        fprintf('\n');
+        ponto = ponto + 1;
+    end
+end
+
+% Item 16 - Avaliar para cada posição z o critério de máxima deformação
+fprintf('\nMaximum Strain Criterion Evaluation\n');
+ponto = 1;
+for camada = 1:n
+    angulo_graus = orientation(camada) * 180 / pi;
+    for j = 1:npl
+        e1 = Strain12(1, 1, ponto);
+        e2 = Strain12(2, 1, ponto);
+        Y12 = Strain12(3, 1, ponto);
+        
+        % Calcular deformações de falha
+        e1t = Xt/E1;
+        e1c = -Xc/E1;
+        e2t = Yt/E2;
+        e2c = -Yc/E2;
+        Y12f = S6/G12;
+        
+        fprintf('layer = %d\n', camada);
+        fprintf('angle = %.0f\n', angulo_graus);
+        fprintf('z_coordinate = %.4e\n', zpos(ponto));
+        
+        % Verificação de falha por deformação máxima
+        if e1 > e1t || e1 < e1c
+            fprintf('FAILURE in fiber direction (1)\n');
+            if e1 > 0
+                fprintf('Mode: Tensile failure in fiber direction\n');
+            else
+                fprintf('Mode: Compressive failure in fiber direction\n');
+            end
+        elseif e2 > e2t || e2 < e2c
+            fprintf('FAILURE in transverse direction (2)\n');
+            if e2 > 0
+                fprintf('Mode: Tensile failure in matrix direction\n');
+            else
+                fprintf('Mode: Compressive failure in matrix direction\n');
+            end
+        elseif abs(Y12) > Y12f
+            fprintf('FAILURE in shear\n');
+            fprintf('Mode: Shear failure\n');
+        else
+            fprintf('NO FAILURE detected\n');
+        end
+        
+        fprintf('\n');
+        ponto = ponto + 1;
+    end
+end
+
+% Item 17 - Avaliar para cada posição z o critério de Tsai-Hill
+fprintf('\nTsai-Hill Criterion Evaluation\n');
+ponto = 1;
+for camada = 1:n
+    angulo_graus = orientation(camada) * 180 / pi;
+    for j = 1:npl
+        S1 = Stress12(1, 1, ponto);
+        S2 = Stress12(2, 1, ponto);
+        T12 = Stress12(3, 1, ponto);
+        
+        % Determinar as resistências apropriadas com base no sinal das tensões
+        X = (S1 >= 0) * Xt + (S1 < 0) * Xc;
+        Y = (S2 >= 0) * Yt + (S2 < 0) * Yc;
+        
+        % Calcular índice de Tsai-Hill
+        if S1 >= 0
+            % Tensão na direção 1 é de tração
+            TsaiHill = (S1/X)^2 - (S1*S2/X^2) + (S2/Y)^2 + (T12/S6)^2;
+        else
+            % Tensão na direção 1 é de compressão
+            TsaiHill = (S1/X)^2 + (S2/Y)^2 + (T12/S6)^2;
+        end
+        
+        fprintf('layer = %d\n', camada);
+        fprintf('angle = %.0f\n', angulo_graus);
+        fprintf('z_coordinate = %.4e\n', zpos(ponto));
+        fprintf('Tsai-Hill Index = %.4f\n', TsaiHill);
+        
+        if TsaiHill >= 1
+            fprintf('FAILURE predicted by Tsai-Hill criterion\n');
+            
+            % Identificar modo de falha dominante
+            [max_val, max_idx] = max([(S1/X)^2, (S2/Y)^2, (T12/S6)^2]);
+            
+            if max_idx == 1
+                if S1 >= 0
+                    fprintf('Dominant Mode: Tensile failure in fiber direction\n');
+                else
+                    fprintf('Dominant Mode: Compressive failure in fiber direction\n');
+                end
+            elseif max_idx == 2
+                if S2 >= 0
+                    fprintf('Dominant Mode: Tensile failure in matrix direction\n');
+                else
+                    fprintf('Dominant Mode: Compressive failure in matrix direction\n');
+                end
+            else
+                fprintf('Dominant Mode: Shear failure\n');
+            end
+        else
+            fprintf('NO FAILURE predicted by Tsai-Hill criterion\n');
+        end
+        
+        fprintf('\n');
+        ponto = ponto + 1;
+    end
+end
